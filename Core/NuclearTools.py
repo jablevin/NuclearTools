@@ -53,9 +53,8 @@ MT_dict = {'(n,2nd)'     :11,
         '(n,t)'          :0,
         '(n,t)'          :49,
         '(n,alpha)'      :849,
-        'fission'        :18   }
-
-MF = 3
+        'fission'        :18,
+        '(n,f)'          :18   }
 
 def indv_elements(compound):
     """ Returns a list of individual elements and a list of their multiplicities"""
@@ -220,34 +219,34 @@ def coh_scatter_energy(atom, angle, E):
 
 
 
-class weight_fraction(object):
-    """ Converts weight fraction to atom fraction"""
-    def __init__(self, weights, elements, density, compound = None):
-        assert len(weights) == len(elements), (
-                "Number of weight fractions does not equal number of elements")
-        self.weights = []
-        self.elements = []
-        self.indv_mass = []
-        self.density = density
-
-        if compound == 'UO2':
-            self.comp_mass = Element('U').atomic_mass + 2 * Element('O').atomic_mass
-            self.elem_mass = Element('U').atomic_mass
-
-        for i in range(len(weights)):
-            self.weights.append(weights[i])
-            self.elements.append(elements[i])
-
-        for name in self.elements:
-            self.indv_mass.append(atomic_mass(name))
-
-    @property
-    def num_density(self):
-        self.number_density = []
-        for i in range(len(self.weights)):
-            self.number_density.append( self.weights[i] * NA * self.density / self.indv_mass[i]
-                    * (self.elem_mass / self.comp_mass) )
-        return self.number_density
+# class weight_fraction(object):
+#     """ Converts weight fraction to atom fraction"""
+#     def __init__(self, weights, elements, density, compound = None):
+#         assert len(weights) == len(elements), (
+#                 "Number of weight fractions does not equal number of elements")
+#         self.weights = []
+#         self.elements = []
+#         self.indv_mass = []
+#         self.density = density
+#
+#         if compound == 'UO2':
+#             self.comp_mass = Element('U').atomic_mass + 2 * Element('O').atomic_mass
+#             self.elem_mass = Element('U').atomic_mass
+#
+#         for i in range(len(weights)):
+#             self.weights.append(weights[i])
+#             self.elements.append(elements[i])
+#
+#         for name in self.elements:
+#             self.indv_mass.append(atomic_mass(name))
+#
+#     @property
+#     def num_density(self):
+#         self.number_density = []
+#         for i in range(len(self.weights)):
+#             self.number_density.append( self.weights[i] * NA * self.density / self.indv_mass[i]
+#                     * (self.elem_mass / self.comp_mass) )
+#         return self.number_density
 
 
 
@@ -257,10 +256,12 @@ class cross_section(object):
     """
 
     def __init__(self, nuclide_lookup, MT, MF):
-        self.MT = MT
-        self.MF = MF
+        try:
+            self.MT = int(MT)
+        except:
+            self.MT = int(MT_dict[MT])
 
-        nuclide_lookup = 'U-235'
+        self.MF = MF
 
         site = "https://www-nds.iaea.org/public/download-endf/ENDF-B-VIII.0/n/"
         user_agent = 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.0.7) Gecko/2009021910 Firefox/3.0.7'
@@ -370,7 +371,10 @@ class cross_section(object):
 
     def plot(self):
         plt.figure(figsize=(10,6))
-        plt.loglog(self.energies, self.cross_sections, color = 'darkorange')
+        plt.loglog(self.energies[1:], self.cross_sections[1:], color = 'darkorange')
         plt.xlabel('Energies [eV]')
         plt.ylabel('Cross Section [barns]')
         plt.tight_layout()
+
+
+    # TODO Add ability to condense down to energy group Ex: fast and thermal gorups.
