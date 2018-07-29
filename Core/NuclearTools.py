@@ -1,9 +1,5 @@
 import pint
 import numpy as np
-from becquerel.tools.isotope import Isotope
-from becquerel.tools.isotope_qty import IsotopeQuantity, NeutronIrradiation
-from becquerel.tools.element import Element
-from becquerel.tools.element import element_z
 import becquerel.tools.materials as mat
 import datetime
 import os
@@ -18,7 +14,7 @@ U = pint.UnitRegistry()
 
 #constants
 NA = 6.0221409 * 10**23
-nuclide_data = get_python_lib() + '/Nuclear_Tools/Nuclide_Data.txt'
+nuclide_data = get_python_lib() + '/NuclearTools/Nuclide_Data.txt'
 Pm = 1.0072764669
 Nm = 1.00866491588
 em = .0005485799
@@ -123,21 +119,54 @@ def atomic_mass(atom):
 
 
 
+def standard_mass(element):
+    """ Provides standard mass of atom.  Input as Cs """
+    with open(nuclide_data) as search:
+        lines = search.readlines()
+        for i in range(len(lines)):
+            lines[i] = lines[i].rstrip()
+        for i in range(len(lines)):
+            if lines[i] == 'Atomic Symbol = ' + element:
+                break
+    try:
+        return float(lines[i+4][25:(lines[i+4].index('('))])
+    except:
+        try:
+            return float(lines[i+4][26:(lines[i+4].index(']'))])
+        except:
+            raise Exception('Standard mass not available for ' + element)
+
+
+
+def atomic_number(element):
+    """ Provides atomic mass of atom.  Input as Cs """
+    with open(nuclide_data) as search:
+        lines = search.readlines()
+        for i in range(len(lines)):
+            lines[i] = lines[i].rstrip()
+        for i in range(len(lines)):
+            if lines[i] == 'Atomic Symbol = ' + element:
+                break
+    return int(lines[i-1][16:])
+
+
+
 def molec_mass(compound):
     """ Input molecular compound such as UO2 for Uranium Oxide to obtain molecular mass """
     mass = []
     elements, inst = indv_elements(compound)
     for i in range(len(elements)):
         try:
-            mass.append(Element(elements[i]).atomic_mass * inst[i])
+            mass.append(standard_mass(elements[i]) * inst[i])
         except:
             raise Exception("Element " + str(elements[i]) + " is not a known element")
 
     return sum(mass)
 
 
+
 # TODO finish material number densities
-def num_density(material, compound = False, weight_per = None, atom_per = None, density = None):
+def num_density(material, compound = False, density = None, weight_per = None, atom_per = None):
     """ Provides the number density of a lone atom material or a compound """
     if not compound:
         index = material.index('-')
@@ -165,7 +194,7 @@ def BE_per_nucleon(atom):
     index = atom.index('-')
     element = str(atom[0:index])
     A = int(atom[index+1:])
-    num_Z = element_z(element)
+    num_Z = atomic_number(element)
     num_N = A - num_Z
     exp_mass = Pm * num_Z + Nm * num_N
     mass_defect = exp_mass - real_mass
