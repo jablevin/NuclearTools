@@ -1,6 +1,5 @@
 import pint
 import numpy as np
-import becquerel.tools.materials as mat
 import datetime
 import os
 from io import BytesIO
@@ -43,14 +42,15 @@ MT_dict = {'(n,2nd)'     :11,
         '(n,pd)'         :15,
         '(n,pt)'         :16,
         '(n,dalpha)'     :17,
-        '(n,p)'          :49,
+        '(n,p)'          :103,
         '(n,d)'          :50,
         '(n,d)'          :99,
         '(n,t)'          :0,
         '(n,t)'          :49,
         '(n,alpha)'      :849,
         'fission'        :18,
-        '(n,f)'          :18   }
+        '(n,f)'          :18,
+        '(n,gamma)'      :102 }
 
 def indv_elements(compound):
     """ Returns a list of individual elements and a list of their multiplicities"""
@@ -172,8 +172,7 @@ def num_density(material, compound = False, density = None, weight_per = None, a
         index = material.index('-')
         element = str(material[0:index])
         A = int(material[index+1:])
-        elem_dat = mat.fetch_element_data()
-        rho = elem_dat['Density'][elem_dat[elem_dat['Symbol'] == 'B'].index[0]]
+        rho = density
     else:
         if weight_per != None:
             print('h')
@@ -308,7 +307,7 @@ class cross_section(object):
         request = urllib.request.Request(site + filestream[split], None, headers)
         response = urllib.request.urlopen(request)
         zipfile = ZipFile(BytesIO(response.read()))
-        with open((get_python_lib() + '/Nuclear_Tools/temp.dat'), 'w') as file:
+        with open((get_python_lib() + '/NuclearTools/temp.dat'), 'w') as file:
             for line in zipfile.open(zipfile.namelist()[0]).readlines():
                 file.write(line.decode('utf-8').rstrip() + '\n')
 
@@ -322,7 +321,7 @@ class cross_section(object):
             'content': slice(0, 66),
             'data': (slice(0, 11), slice(11, 22), slice(22, 33), slice(33, 44), slice(44, 55), slice(55, 66))}
 
-        f = open(get_python_lib() + '/Nuclear_Tools/temp.dat')
+        f = open(get_python_lib() + '/NuclearTools/temp.dat')
         lines = f.readlines()
         sec = self.find_section(lines, self.MF, self.MT)
         self.energies, self.cross_sections = self.read_table(sec)
@@ -365,7 +364,7 @@ class cross_section(object):
         return np.array(x[:nP]), np.array(y[:nP])
 
 
-    def find_file(self, lines, MF=1):
+    def find_file(self, lines, MF):
         """Locate and return a certain file"""
         v = [l[self.slices['MF']] for l in lines]
         n = len(v)
@@ -375,7 +374,7 @@ class cross_section(object):
         return lines[i0: i1]
 
 
-    def find_section(self, lines, MF=3, MT=3):
+    def find_section(self, lines, MF, MT):
         """Locate and return a certain section"""
         v = [l[70:75] for l in lines]
         n = len(v)
@@ -404,6 +403,25 @@ class cross_section(object):
         plt.xlabel('Energies [eV]')
         plt.ylabel('Cross Section [barns]')
         plt.tight_layout()
+        plt.show()
+        return None
 
+    def single_average(self, func, func_units):
+        if func_units == 'MeV':
+            energy = self.energies / 10**6
+        if func_units == 'keV':
+            energy = self.energies / 10**3
 
-    # TODO Add ability to condense down to energy group Ex: fast and thermal gorups.
+        function = []
+        for i in range(len(energy)):
+            function.append(func(energy[i]))
+
+        inner = []
+        for i in range(len(energy)):
+            inner.append(self.cross_sections[i]*function[i])
+
+        numerator = np.trapz(inner, energy)
+        denominator = np.trapz(function, energy)
+        return numerator / denominator
+
+    # TODO Add ability to condense down to energy group Ex: fast and thermal groups.
