@@ -22,9 +22,6 @@ packege library
 It is highly reccomended to install Anaconda for the best results in compatability and in setup.
 
 To setup simply execute:
->> python setup.py build
-
-Followed by:
->> python setup.py install
+>> python setup.py develop
 
 Then you should be good to go!
