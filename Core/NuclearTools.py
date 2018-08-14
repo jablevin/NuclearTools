@@ -17,40 +17,50 @@ nuclide_data = get_python_lib() + '/NuclearTools/Nuclide_Data.txt'
 Pm = 1.0072764669
 Nm = 1.00866491588
 em = .0005485799
-MT_dict = {'(n,2nd)'     :11,
-        '(n,2n)'         :16,
-        '(n,3n)'         :17,
-        '(n,nalpha)'     :22,
-        '(n,2nalpha)'    :24,
-        '(n,np)'         :28,
-        '(n,n2alpha)'    :29,
-        '(n,nd)'         :32,
-        '(n,nt)'         :33,
-        '(n,2np)'        :41,
-        '(n,3np)'        :42,
-        '(n,n2p)'        :44,
-        '(n,npalpha)'    :45,
-        '(n,nprime)'     :64,
-        '(n,nprime)'     :91,
-        '(n,p)'          :3,
-        '(n,d)'          :4,
-        '(n,t)'          :5,
-        '(n,alpha)'      :7,
-        '(n,2alpha)'     :8,
-        '(n,2p)'         :11,
-        '(n,palpha)'     :12,
-        '(n,pd)'         :15,
-        '(n,pt)'         :16,
-        '(n,dalpha)'     :17,
-        '(n,p)'          :103,
-        '(n,d)'          :50,
-        '(n,d)'          :99,
-        '(n,t)'          :0,
-        '(n,t)'          :49,
-        '(n,alpha)'      :849,
-        'fission'        :18,
-        '(n,f)'          :18,
-        '(n,gamma)'      :102 }
+MT_dict = {'(z,total)'   :1,
+        '(z,EL)'         :2,
+        '(z,NEL)'        :3,
+        '(z,n)'          :4,
+        '(z,t)'          :5,
+        '(z,continuum)'  :10,
+        '(z,2nd)'        :11,
+        '(z,2n)'         :16,
+        '(z,3n)'         :17,
+        '(z,fission)'    :18,
+        '(z,f)'          :19,
+        '(z,nf)'         :20,
+        '(z,2nf)'        :21,
+        '(z,na)'         :22,
+        '(z,n3a)'        :23,
+        '(z,2na)'        :24,
+        '(z,3na)'        :25,
+        '(z,abs)'        :27,
+        '(z,np)'         :28,
+        '(z,n2a)'        :29,
+        '(z,2n2a)'       :30,
+        '(z,nd)'         :32,
+        '(z,nt)'         :33,
+        '(z,nHe-3)'      :34,
+        '(z,nd2a)'       :35,
+        '(z,nt2a)'       :36,
+        '(z,4n)'         :37,
+        '(z,3nf)'        :38,
+        '(z,2np)'        :41,
+        '(z,3np)'        :42,
+        '(z,n2p)'        :44,
+        '(z,npa)'        :45,
+        '(z,n0)'         :50,
+        '(z,nc)'         :91,
+        '(z,disap)'      :101,
+        '(z,gamma)'      :102,
+        '(z,p)'          :103,
+        '(z,alpha)'      :849,
+
+        'total'          :1,
+        'elastic'        :2,
+        'nonelastic'     :3,
+        'anything'       :5,
+        'fission'        :18,}
 
 def indv_elements(compound):
     """ Returns a list of individual elements and a list of their multiplicities"""
@@ -283,15 +293,26 @@ class cross_section(object):
     Finds cross sections for input nuclide and can plot or resamble to given energy groups
     """
 
-    def __init__(self, nuclide_lookup, MT, MF):
+    def __init__(self, nuclide_lookup, MF, MT):
+        try:
+            index_MT0 = MT.index('(')
+            index_MT1 = MT.index(',')
+            incident = MT[1+index_MT0:index_MT1]
+        except:
+            incident = 'n'
+
         try:
             self.MT = int(MT)
         except:
-            self.MT = int(MT_dict[MT])
+            try:
+                self.MT = int(MT_dict[MT])
+            except:
+                tmp_string = '(z' + MT[index_MT1:]
+                self.MT = int(MT_dict[tmp_string])
 
         self.MF = MF
 
-        site = "https://www-nds.iaea.org/public/download-endf/ENDF-B-VIII.0/n/"
+        site = "https://www-nds.iaea.org/public/download-endf/ENDF-B-VIII.0/" + incident + "/"
         user_agent = 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.0.7) Gecko/2009021910 Firefox/3.0.7'
         headers={'User-Agent':user_agent,}
 
@@ -324,7 +345,7 @@ class cross_section(object):
         f = open(get_python_lib() + '/NuclearTools/temp.dat')
         lines = f.readlines()
         sec = self.find_section(lines, self.MF, self.MT)
-        self.energies, self.cross_sections = self.read_table(sec)
+        self.indep_var, self.cross_sections = self.read_table(sec)
 
     def read_float(self, v):
         """
@@ -399,8 +420,9 @@ class cross_section(object):
 
     def plot(self):
         plt.figure(figsize=(10,6))
-        plt.loglog(self.energies[1:], self.cross_sections[1:], color = 'darkorange')
-        plt.xlabel('Energies [eV]')
+        plt.loglog(self.indep_var[1:], self.cross_sections[1:], color = 'darkorange')
+        if self.MT == 3:
+            plt.xlabel('Energies [eV]')
         plt.ylabel('Cross Section [barns]')
         plt.tight_layout()
         plt.show()
@@ -408,20 +430,35 @@ class cross_section(object):
 
     def single_average(self, func, func_units):
         if func_units == 'MeV':
-            energy = self.energies / 10**6
+            indep_var = self.indep_var / 10**6
         if func_units == 'keV':
-            energy = self.energies / 10**3
+            indep_var = self.indep_var / 10**3
+        if func_units == 'eV':
+            indep_var = self.indep_var
 
         function = []
-        for i in range(len(energy)):
-            function.append(func(energy[i]))
+        for i in range(len(indep_var)):
+            function.append(func(indep_var[i]))
 
         inner = []
-        for i in range(len(energy)):
+        for i in range(len(indep_var)):
             inner.append(self.cross_sections[i]*function[i])
 
-        numerator = np.trapz(inner, energy)
-        denominator = np.trapz(function, energy)
+        numerator = np.trapz(inner, indep_var)
+        denominator = np.trapz(function, indep_var)
         return numerator / denominator
 
-    # TODO Add ability to condense down to energy group Ex: fast and thermal groups.
+    def make_csv(self, filename=None):
+        tmp = np.vstack((self.indep_var, self.cross_sections))
+        txt = tmp.transpose()
+        location = os.getcwd()
+        if filename == None:
+            filename = 'cross_section_data.csv'
+
+        if filename[:-4] != '.csv':
+            filename += '.csv'
+
+        np.savetxt(location + '/' + filename, txt, delimiter=',')
+        return None
+
+    # TODO Add ability to condense down to several energy groups Ex: fast and thermal groups.
