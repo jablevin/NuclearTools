@@ -421,7 +421,7 @@ class cross_section(object):
     def plot(self):
         plt.figure(figsize=(10,6))
         plt.loglog(self.indep_var[1:], self.cross_sections[1:], color = 'darkorange')
-        if self.MT == 3:
+        if self.MF == 3:
             plt.xlabel('Energies [eV]')
         plt.ylabel('Cross Section [barns]')
         plt.tight_layout()

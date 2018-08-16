@@ -11,7 +11,7 @@ if not os.path.exists(newpath):
     os.makedirs(newpath)
 
 try:
-    os.system('cp \'' + cwd + '/Core/NuclearTools.py\' ' + newpath)
+    os.system('cp \'' + cwd + '/NuclearTools/NuclearTools.py\' ' + newpath)
     os.system('cp \'' + cwd + '/Nuclide_Data.txt\' ' + newpath)
 except:
     pass
