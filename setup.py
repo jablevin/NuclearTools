@@ -1,30 +1,16 @@
 # -*- coding: utf-8 -*-
 
-from distutils.core import setup
-from distutils.sysconfig import get_python_lib
 import io
 import os
 import sys
 from shutil import rmtree
 from setuptools import find_packages, setup, Command
 
-pythonlib = get_python_lib()
-pythonlib = pythonlib.replace('\\', '/')
 cwd = os.getcwd()
 cwd = cwd.replace('\\', '/')
 
-newpath = pythonlib + '/NuclearTools'
-if not os.path.exists(newpath):
-    os.makedirs(newpath)
-
-try:
-    os.system('cp \'' + cwd + '/Core/NuclearTools.py\' ' + newpath)
-    os.system('cp \'' + cwd + '/Nuclide_Data.txt\' ' + newpath)
-except:
-    pass
-
 NAME = 'NuclearTools'
-DESCRIPTION = 'Handy nuclear tools for quick reference'
+DESCRIPTION = 'Handy nuclear tools for quick calculation and reference'
 URL = 'https://github.com/jablevin/Nuclear_Tools'
 AUTHOR = 'Jacob Blevins'
 REQUIRES_PYTHON = '>=3.6.0'
@@ -32,13 +18,18 @@ VERSION = '0.1dev'
 
 
 REQUIRED = ['pint',
-
+            'numpy',
+            'datetime',
+            'os',
+            'zipfile',
+            'urllib',
+            'matplotlib',
+            'distutils'
 ]
 
-here = cwd
 
 try:
-    with io.open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
+    with io.open(os.path.join(cwd, 'README.md'), encoding='utf-8') as f:
         long_description = '\n' + f.read()
 except FileNotFoundError:
     long_description = DESCRIPTION
@@ -66,7 +57,7 @@ class UploadCommand(Command):
     def run(self):
         try:
             self.status('Removing previous builds…')
-            rmtree(os.path.join(here, 'dist'))
+            rmtree(os.path.join(cwd, 'dist'))
         except OSError:
             pass
 
