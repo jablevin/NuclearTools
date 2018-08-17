@@ -12,6 +12,7 @@ if not os.path.exists(newpath):
 
 try:
     os.system('cp \'' + cwd + '/NuclearTools/NuclearTools.py\' ' + newpath)
-    os.system('cp \'' + cwd + '/Nuclide_Data.txt\' ' + newpath)
+    os.system('cp \'' + cwd + '/NuclearTools/Nuclide_Data.txt\' ' + newpath)
+    os.system('cp \'' + cwd + '/NuclearTools/__init__.py\' ' + newpath)
 except:
     pass

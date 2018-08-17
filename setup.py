@@ -14,17 +14,13 @@ DESCRIPTION = 'Handy nuclear tools for quick calculation and reference'
 URL = 'https://github.com/jablevin/Nuclear_Tools'
 AUTHOR = 'Jacob Blevins'
 REQUIRES_PYTHON = '>=3.6.0'
-VERSION = '0.1dev'
+VERSION = '0.0.1'
 
 
 REQUIRED = ['pint',
             'numpy',
             'datetime',
-            'os',
-            'zipfile',
-            'urllib',
             'matplotlib',
-            'distutils'
 ]
 
 
@@ -86,8 +82,8 @@ setup(
     packages=find_packages(exclude=('tests',)),
 
     install_requires=REQUIRED,
+    package_data={'NuclearTools': ['Nuclide_Data.txt']},
 
-    include_package_data=True,
     license='MIT',
     classifiers=[
         # Trove classifiers
