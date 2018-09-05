@@ -176,9 +176,9 @@ def molec_mass(compound):
 
 
 # TODO finish material number densities
-def num_density(material, compound = False, density = None, weight_per = None, atom_per = None):
+def num_density(material, is_compound = False, density = None, weight_per = None, atom_per = None):
     """ Provides the number density of a lone atom material or a compound """
-    if not compound:
+    if not is_compound:
         index = material.index('-')
         element = str(material[0:index])
         A = int(material[index+1:])
@@ -195,6 +195,37 @@ def num_density(material, compound = False, density = None, weight_per = None, a
 
     return (rho * NA / A) / U.cm**3
 
+# class material_fractions(object):
+#     """ Converts weight fraction to atom fraction"""
+#     def __init__(self, material, is_compound=False, density=None, weight_percent=None, atom_percent=None, isotopes=None):
+#         self.weight_percent = weight_percent
+#         self.atom_percent = atom_percent
+#         self.density = density
+#         self.elements, self.inst = indv_elements(material)
+#         self.indv_mass = [atomic_mass(i) for i in self.elements]
+#         holder = [standard_mass(i) for i in self.elements]
+#         self.comp_mass = sum([holder * self.inst[i] for i in range(len(self.inst))])
+#         self.isotopes = isotopes
+#
+#         if element_of_interest == None:
+#             element_of_interest = self.elements[0]
+#
+#         self.elem_mass = standard_mass(element_of_interest)
+#
+#         # if compound == 'UO2':
+#         #     self.comp_mass = Element('U').atomic_mass + 2 * Element('O').atomic_mass
+#         #     self.elem_mass = Element('U').atomic_mass
+#
+#         # for name in self.elements:
+#         #     self.indv_mass.append(atomic_mass(name))
+#
+#     @property
+#     def compound_number_density(self):
+#         self.number_density = []
+#         for i in range(len(self.weight_percent)):
+#             self.number_density.append( self.weight_percent[i] * NA * self.density / self.indv_mass[i]
+#                     * (self.elem_mass / self.comp_mass) )
+#         return self.number_density
 
 
 def BE_per_nucleon(atom):
@@ -257,34 +288,7 @@ def coh_scatter_energy(atom, angle, E):
 
 
 
-# class weight_fraction(object):
-#     """ Converts weight fraction to atom fraction"""
-#     def __init__(self, weights, elements, density, compound = None):
-#         assert len(weights) == len(elements), (
-#                 "Number of weight fractions does not equal number of elements")
-#         self.weights = []
-#         self.elements = []
-#         self.indv_mass = []
-#         self.density = density
-#
-#         if compound == 'UO2':
-#             self.comp_mass = Element('U').atomic_mass + 2 * Element('O').atomic_mass
-#             self.elem_mass = Element('U').atomic_mass
-#
-#         for i in range(len(weights)):
-#             self.weights.append(weights[i])
-#             self.elements.append(elements[i])
-#
-#         for name in self.elements:
-#             self.indv_mass.append(atomic_mass(name))
-#
-#     @property
-#     def num_density(self):
-#         self.number_density = []
-#         for i in range(len(self.weights)):
-#             self.number_density.append( self.weights[i] * NA * self.density / self.indv_mass[i]
-#                     * (self.elem_mass / self.comp_mass) )
-#         return self.number_density
+
 
 
 
@@ -356,8 +360,7 @@ class cross_section(object):
         try:
             return float(v)
         except ValueError:
-            # ENDF6 may omit the e for exponent
-            return float(v[0] + v[1:].replace('+', 'e+').replace('-', 'e-'))  # don't replace leading negative sign
+            return float(v[0] + v[1:].replace('+', 'e+').replace('-', 'e-'))
 
 
     def read_line(self, l):
@@ -368,8 +371,8 @@ class cross_section(object):
     def read_table(self, lines):
         """ Parse Data """
         f = self.read_line(lines[1])
-        nS = int(f[4])  # number of interpolation sections
-        nP = int(f[5])  # number of data points
+        nS = int(f[4])
+        nP = int(f[5])
 
         # data lines
         x = []
@@ -389,9 +392,9 @@ class cross_section(object):
         """Locate and return a certain file"""
         v = [l[self.slices['MF']] for l in lines]
         n = len(v)
-        cmpstr = '%2s' % MF       # search string
-        i0 = v.index(cmpstr)            # first occurrence
-        i1 = n - v[::-1].index(cmpstr)  # last occurrence
+        cmpstr = '%2s' % MF
+        i0 = v.index(cmpstr)
+        i1 = n - v[::-1].index(cmpstr)
         return lines[i0: i1]
 
 
@@ -399,9 +402,9 @@ class cross_section(object):
         """Locate and return a certain section"""
         v = [l[70:75] for l in lines]
         n = len(v)
-        cmpstr = '%2s%3s' % (MF, MT)       # search string
-        i0 = v.index(cmpstr)            # first occurrence
-        i1 = n - v[::-1].index(cmpstr)  # last occurrence
+        cmpstr = '%2s%3s' % (MF, MT)
+        i0 = v.index(cmpstr)
+        i1 = n - v[::-1].index(cmpstr)
         return lines[i0: i1]
 
 
@@ -412,7 +415,6 @@ class cross_section(object):
         s2 = self.slices['MT']
         content = set(((int(l[s0]), int(l[s1]), int(l[s2])) for l in lines))
 
-        # remove section delimiters
         for c in content.copy():
             if 0 in c:
                 content.discard(c)
@@ -426,7 +428,7 @@ class cross_section(object):
         plt.ylabel('Cross Section [barns]')
         plt.tight_layout()
         plt.show()
-        return None
+        return pass
 
     def single_average(self, func, func_units):
         if func_units == 'MeV':
@@ -462,3 +464,9 @@ class cross_section(object):
         return None
 
     # TODO Add ability to condense down to several energy groups Ex: fast and thermal groups.
+    def condense_to(self, groups):
+        groups = int(groups)
+        group_len = len(self.cross_sections) // groups
+
+
+        return pass
