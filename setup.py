@@ -11,16 +11,18 @@ cwd = cwd.replace('\\', '/')
 
 NAME = 'NuclearTools'
 DESCRIPTION = 'Handy nuclear tools for quick calculation and reference'
-URL = 'https://github.com/jablevin/Nuclear_Tools'
+URL = 'https://github.com/jablevin/NuclearTools'
 AUTHOR = 'Jacob Blevins'
 REQUIRES_PYTHON = '>=3.6.0'
-VERSION = '0.0.1'
+VERSION = '0.0.6'
 
 
 REQUIRED = ['pint',
             'numpy',
             'datetime',
             'matplotlib',
+            'iapws',
+            'scipy',
 ]
 
 
