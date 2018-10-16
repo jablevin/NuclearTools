@@ -428,7 +428,6 @@ class cross_section(object):
         plt.ylabel('Cross Section [barns]')
         plt.tight_layout()
         plt.show()
-        return pass
 
     def single_average(self, func, func_units):
         if func_units == 'MeV':
@@ -467,6 +466,3 @@ class cross_section(object):
     def condense_to(self, groups):
         groups = int(groups)
         group_len = len(self.cross_sections) // groups
-
-
-        return pass
