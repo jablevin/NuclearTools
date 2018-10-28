@@ -668,7 +668,7 @@ class reactor_temperatures(object):
         zrange = np.linspace(0, self.height.magnitude, self.height.magnitude+1)
         for i in zrange:
             temp.append(self.CHF(i))
-        return min(temp), (self.quality_range()[0]+temp.index(min(temp))) *self.U.inch
+        return min(temp), temp.index(min(temp)) *self.U.inch
 
 
     def plot(self, coolant=False, clad=False, fuel=False, units=None, method=None):
