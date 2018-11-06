@@ -7,11 +7,12 @@ import matplotlib.pyplot as plt
 from iapws import IAPWS97 as ST
 from scipy.misc import derivative
 
+# TODO remove T_sat from input
 class reactor_temperatures(object):
     def __init__(self, power=None, height=None, pitch=None, T_inf=None,
                 PF_power=None, PF_axial=None, D_clad=None, c_thick=None,
                 D_pellet=None, k_c=None, n_rods=None, hg=None, pressure=None,
-                G=None, gamma=None, cp=None, U=None, T_sat=None, channel=None,
+                G=None, gamma=None, cp=None, U=None, T_sat=None, channel='average',
                 heat_flux=None, h_in=None, method='thom',life='MOC', CPR=None):
         self.U = U
         if power!=None:
@@ -144,7 +145,7 @@ class reactor_temperatures(object):
         self.mu = obj.mu * self.U.Pa * self.U.s
         self.k_water = obj.k * self.U.W / (self.U.m * self.U.degK)
         self.h0 = obj.h * self.U.kJ/self.U.kg
-        self.reynolds = (G*self.De/self.mu)**0.8
+        self.reynolds = ((self.G*self.De/self.mu).to(self.U.dimensionless)).magnitude
         self.hc = (.042*pitch/D_clad-.024)*self.reynolds**.8*self.prandt**(1/3)*(self.k_water/(4*(pitch**2-np.pi*(D_clad**2/4))/(np.pi*D_clad)))
         self.hc = self.hc.to(self.U.Btu/(self.U.hour*self.U.foot**2*self.U.degR))
 
@@ -157,12 +158,13 @@ class reactor_temperatures(object):
             self.mu = obj.mu * self.U.Pa * self.U.s
             self.k_water = obj.k * self.U.W / (self.U.m * self.U.degK)
             self.h0 = obj.h * self.U.kJ/self.U.kg
-            self.reynolds = (G*self.De/self.mu)**0.8
+            self.reynolds = ((self.G*self.De/self.mu).to(self.U.dimensionless)).magnitude
             self.hc = (.042*pitch/D_clad-.024)*self.reynolds**.8*self.prandt**(1/3)*(self.k_water/(4*(pitch**2-np.pi*(D_clad**2/4))/(np.pi*D_clad)))
             self.hc = self.hc.to(self.U.Btu/(self.U.hour*self.U.foot**2*self.U.degR))
         except:
             pass
 
+        self.T_mixed_guess = 1100
         try:
             self.zn = self.find_zn()
             self.zb_guess = self.find_zn().magnitude + 36
@@ -217,7 +219,7 @@ class reactor_temperatures(object):
         except:
             pass
         T = (((1/(self.G*self.Ax*self.cp)*np.pi*self.D_clad*self.q_dprime*quad(self.q_z, 0, z,
-                )[0]*self.U.inch).to(self.U.degR).magnitude + self.T_inf.magnitude) * self.U.degR)
+                )[0]*self.U.inch).to(self.U.degR) + self.T_inf) )
         if T > self.T_sat:
             return self.T_sat
         else:
@@ -225,13 +227,14 @@ class reactor_temperatures(object):
 
 
     def T_clad_init(self, z):
-        """ Returns the clad temperature """
+        """ Returns the clad temperature initially
+            Not to be called directly """
         try:
             z = z.to(self.U.inch).magnitude
         except:
             pass
-        return ((self.T_coolant(z).magnitude
-               + (self.q_dprime*self.q_z(z)/self.hc).to(self.U.degR).magnitude) * self.U.degR)
+        return ((self.T_coolant(z)
+               + (self.q_dprime*self.q_z(z)/self.hc).to(self.U.degR)))
 
 
     def T_clad(self, z):
@@ -333,9 +336,9 @@ class reactor_temperatures(object):
 
     def root_zb(self, z):
         """ Returns root for finding zb """
-        T_zb = self.T_sat + self.zeta**(-1/self.m)*(self.q_dprime*self.q_z(z)/10**6)**(1/self.m)
+        T_nb = self.T_sat + self.zeta**(-1/self.m)*(self.q_dprime*self.q_z(z)/10**6)**(1/self.m)
         T_zn = self.T_clad_init(self.zn)
-        q_fc = self.hc*(T_zb-self.T_coolant(z))
+        q_fc = self.hc*(T_nb-self.T_coolant(z))
         q_n = self.zeta*10**6*(T_zn-self.T_sat)**self.m
         q_dprime1 = self.q_dprime*self.q_z(z)
         return (q_fc*(1 + (q_dprime1/q_fc * (1 - q_n/(q_dprime1)))**2)**0.5
@@ -362,7 +365,7 @@ class reactor_temperatures(object):
             z = z.to(self.U.inch).magnitude
         except:
             pass
-        return root(self.root_T_clad_mixed, 1200, args=(z)).x[0] * self.U.degR
+        return root(self.root_T_clad_mixed, self.T_mixed_guess, args=(z)).x[0] * self.U.degR
 
 
     def T_clad_zb(self, z):
