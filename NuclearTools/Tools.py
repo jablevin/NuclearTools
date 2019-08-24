@@ -460,7 +460,7 @@ class cross_section(object):
             filename += '.csv'
 
         np.savetxt(location + '/' + filename, txt, delimiter=',')
-        return None
+
 
     # TODO Add ability to condense down to several energy groups Ex: fast and thermal groups.
     def condense_to(self, groups):

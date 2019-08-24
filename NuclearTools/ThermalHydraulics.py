@@ -10,7 +10,7 @@ from scipy.misc import derivative
 # TODO remove T_sat from input
 class reactor_temperatures(object):
     def __init__(self, power=None, height=None, pitch=None, T_inf=None,
-                PF_power=None, PF_axial=None, D_clad=None, c_thick=None,
+                Fq=None, Fx=None, D_clad=None, c_thick=None,
                 D_pellet=None, k_c=None, n_rods=None, hg=None, pressure=None,
                 G=None, gamma=None, cp=None, U=None, T_sat=None, channel='average',
                 heat_flux=None, h_in=None, method='thom',life='MOC', CPR=None):
@@ -19,8 +19,8 @@ class reactor_temperatures(object):
             self.power = power.to(self.U.MW)
         if T_inf != None:
             self.T_inf = T_inf.to(self.U.degR)
-        if PF_power != None:
-            self.PF_power = PF_power
+        if Fq != None:
+            self.Fq = Fq
         if n_rods != None:
             self.n_rods = n_rods
         if c_thick != None:
@@ -40,7 +40,7 @@ class reactor_temperatures(object):
 
         self.height = height.to(self.U.inch)
         self.pitch = pitch.to(self.U.inch)
-        self.PF_axial = PF_axial
+        self.Fx = Fx
         self.D_clad = D_clad.to(self.U.inch)
         self.Ax = pitch**2 - np.pi*(D_clad**2)/4
         self.De = (4*(pitch**2 - np.pi*(D_clad**2)/4)) / (np.pi * D_clad)
@@ -83,7 +83,7 @@ class reactor_temperatures(object):
             def q_z2(z, lambda_):
                 return np.sin(np.pi * ((z + lambda_) / (self.height.magnitude + 2*lambda_)))
             def find_lambda(lambda_):
-                return self.PF_axial - (self.height.magnitude/(quad(q_z2, 0, self.height.magnitude, args=(lambda_))[0]))
+                return self.Fx - (self.height.magnitude/(quad(q_z2, 0, self.height.magnitude, args=(lambda_))[0]))
             self.lambda_ = root(find_lambda, 1).x[0] * self.U.inch
         elif life == 'BOC' or self.life == 'Bottom':
             """ Finds the lambda for beginning of cycle """
@@ -94,7 +94,7 @@ class reactor_temperatures(object):
             def q_z2(z, lambda_):
                 return (np.pi*(self.height.magnitude+lambda_-z) / (self.height.magnitude + 2*lambda_))*np.sin(np.pi*(self.height.magnitude+lambda_-z) / (self.height.magnitude + 2*lambda_))
             def find_lambda(lambda_):
-                return self.PF_axial - ((self.shape*self.height.magnitude)/(quad(q_z2, 0, self.height.magnitude, args=(lambda_))[0]))
+                return self.Fx - ((self.shape*self.height.magnitude)/(quad(q_z2, 0, self.height.magnitude, args=(lambda_))[0]))
             self.lambda_ = root(find_lambda, 1).x[0] * self.U.inch
         elif self.life == 'Top':
             """ Finds the lambda for Top Peaked Core """
@@ -105,17 +105,17 @@ class reactor_temperatures(object):
             def q_z2(z, lambda_):
                 return (np.pi*(lambda_+z) / (self.height.magnitude + 2*lambda_))*np.sin(np.pi*(lambda_+z) / (self.height.magnitude + 2*lambda_))
             def find_lambda(lambda_):
-                return self.PF_axial - ((self.shape*self.height.magnitude)/(quad(q_z2, 0, self.height.magnitude, args=(lambda_))[0]))
+                return self.Fx - ((self.shape*self.height.magnitude)/(quad(q_z2, 0, self.height.magnitude, args=(lambda_))[0]))
             self.lambda_ = root(find_lambda, 1).x[0] * self.U.inch
 
         try:
             if channel == 'average':
-                self.q_dprime = ((gamma * power * PF_axial) / (n_rods * np.pi * self.D_clad * height)).to(self.U.lb/self.U.second**3)
+                self.q_dprime = ((gamma * power * Fx) / (n_rods * np.pi * self.D_clad * height)).to(self.U.lb/self.U.second**3)
             elif channel == 'hot':
                 holder = ((gamma * power) / (n_rods * np.pi * self.D_clad * height)).to(self.U.lb/self.U.second**3)
-                self.q_dprime = holder * PF_power
+                self.q_dprime = holder * Fq
             else:
-                self.q_dprime = ((gamma * power * PF_axial) / (n_rods * np.pi * self.D_clad * height)).to(self.U.lb/self.U.second**3)
+                self.q_dprime = ((gamma * power * Fx) / (n_rods * np.pi * self.D_clad * height)).to(self.U.lb/self.U.second**3)
         except:
             pass
 
@@ -612,7 +612,7 @@ class reactor_temperatures(object):
         """ Returns the max Q based on CPR """
         self.q_dprime = self.q_crit() / self.CPR
         return (((self.q_crit()*np.pi*self.n_rods*self.D_clad*self.height*self.shape)/
-                (self.CPR*self.gamma*self.PF_power)).to(self.U.MW))
+                (self.CPR*self.gamma*self.Fq)).to(self.U.MW))
 
 
     def alpha_dix(self, z, type='critical'):
@@ -713,13 +713,13 @@ class reactor_temperatures(object):
 
 
 class void_fractions(object):
-    def __init__(self, heat_flux, pressure, mass_flux, enthalpy, height, PF_axial,
+    def __init__(self, heat_flux, pressure, mass_flux, enthalpy, height, Fx,
                  pitch, D_rod, U, intervals, life):
         self.U = U
         self.heat_flux = heat_flux.to(self.U.Btu/self.U.hour/self.U.foot**2)
         self.height = height.to(self.U.inch)
         self.pitch = pitch.to(self.U.inch)
-        self.PF_axial = PF_axial
+        self.Fx = Fx
         self.D_rod = D_rod.to(self.U.inch)
         self.pressure = pressure.to(self.U.psi)
         self.G = mass_flux.to(self.U.lb/(self.U.hour*self.U.feet**2))
@@ -747,7 +747,7 @@ class void_fractions(object):
             def q_z2(z, lambda_):
                 return np.sin(np.pi * ((z + lambda_) / (self.height.magnitude + 2*lambda_)))
             def find_lambda(lambda_):
-                return self.PF_axial - (self.height.magnitude/(quad(q_z2, 0, self.height.magnitude, args=(lambda_))[0]))
+                return self.Fx - (self.height.magnitude/(quad(q_z2, 0, self.height.magnitude, args=(lambda_))[0]))
             self.lambda_ = root(find_lambda, 1).x[0] * self.U.inch
         elif life == 'BOC':
             """ Finds the lambda for beginning of cycle """
@@ -758,7 +758,7 @@ class void_fractions(object):
             def q_z2(z, lambda_):
                 return (np.pi*(self.height.magnitude+lambda_-z) / (self.height.magnitude + 2*lambda_))*np.sin(np.pi*(self.height.magnitude+lambda_-z) / (self.height.magnitude + 2*lambda_))
             def find_lambda(lambda_):
-                return self.PF_axial - ((hold*self.height.magnitude)/(quad(q_z2, 0, self.height.magnitude, args=(lambda_))[0]))
+                return self.Fx - ((hold*self.height.magnitude)/(quad(q_z2, 0, self.height.magnitude, args=(lambda_))[0]))
             self.lambda_ = root(find_lambda, 36).x[0] * self.U.inch
 
 

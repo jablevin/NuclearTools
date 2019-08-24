@@ -82,7 +82,7 @@ class core_pressure(object):
                 A_total, L_cl, D_cl, k_cl_in, k_cl_out, CL_LD,
                 T_in, T_out, m, U, loops):
 
-        self.pitch, self.D_clad, self.n_rods, self.pressure, self.height, self.n_grids = pitch, D_clad, n_rods, height, pressure, n_grids
+        self.pitch, self.D_clad, self.n_rods, self.height, self.pressure, self.n_grids = pitch, D_clad, n_rods, height, pressure, n_grids
         self.k_grid, self.core_height, self.k_core_in, self.k_core_out, self.v_ID = k_grid, core_height, k_core_in, k_core_out, v_ID
         self.b_OD, self.L_d, self.k_d, self.L_hl, self.D_hl = b_OD, L_d, k_d, L_hl, D_hl
         self.k_hl_in, self.k_hl_out, self.HL_LD = k_hl_in, k_hl_out, HL_LD
