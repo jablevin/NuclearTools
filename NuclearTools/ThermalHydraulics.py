@@ -8,7 +8,7 @@ from iapws import IAPWS97 as ST
 from scipy.misc import derivative
 
 # TODO remove T_sat from input
-class reactor_temperatures(object):
+class reactor_thermals(object):
     def __init__(self, power=None, height=None, pitch=None, T_inf=None,
                 Fq=None, Fx=None, D_clad=None, c_thick=None,
                 D_pellet=None, k_c=None, n_rods=None, hg=None, pressure=None,

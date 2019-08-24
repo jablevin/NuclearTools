@@ -126,7 +126,7 @@ class SMR(object):
 
     def global_avg_params(self, G):
         """ Call function to change all global variables to average channel state """
-        obj.mesh_size = 20
+        self.mesh_size = 20
         self.q_dprime = ((self.gamma * self.power) / (self.shape * self.n_rods * np.pi * self.D_clad * self.height)).to(self.U.Btu/self.U.foot**2/self.U.hour)
         self.G_core = G * self.U.lb/self.U.hour/self.U.foot**2
         self.h_0 = self.find_h0().to(self.U.inch)
@@ -139,7 +139,7 @@ class SMR(object):
 
     def global_hot_params(self, G):
         """ Call function to change all global variables to hot channel state """
-        obj.mesh_size = 20
+        self.mesh_size = 20
         self.q_dprime = ((self.gamma * self.power * self.PF_power) / (self.shape * self.n_rods * np.pi * self.D_clad * self.height)).to(self.U.Btu/self.U.foot**2/self.U.hour)
         self.G_core = G * self.U.lb/self.U.hour/self.U.foot**2
         self.h_0 = self.find_h0().to(self.U.inch)
@@ -166,7 +166,7 @@ class SMR(object):
     def find_G_hot(self, G, P_original):
         """ Finds G_hot that gives equivalent pressure drop across the core as G_avg
            (Do not call function directly, is referenced in (find_G_avg function) """
-        self.q_dprime = ((self.gamma * self.power * self.PF_power) / (self.shape * self.n_rods * np.pi * self.D_clad * self.height)).to(self.U.Btu/self.U.foot**2/U.hour)
+        self.q_dprime = ((self.gamma * self.power * self.PF_power) / (self.shape * self.n_rods * np.pi * self.D_clad * self.height)).to(self.U.Btu/self.U.foot**2/self.U.hour)
         self.G_core = G * self.U.lb/self.U.hour/self.U.foot**2
         try:
             self.G_core = self.G_core[0]
@@ -399,7 +399,7 @@ class SMR(object):
         p = ((self.pressure).to(self.U.MPa)).magnitude
         G = ((self.G_core).to(self.U.kg/self.U.m**2/self.U.s)).magnitude
         tmp = (1-p/p_crit)**3
-        if G <= 3375 * tmp:
+        if G <= 337 * tmp:
             return (tmp/(1+1.481*10**(-4)*G))*(self.D_clad/self.De)
         else:
             return (tmp**(1/3)/(G/1000)**(1/3))*(self.D_clad/self.De)
@@ -462,8 +462,8 @@ class SMR(object):
         """ Finds the total pressure drop across the chimney """
         H = H * self.U.inch
         self.Re_ch = (self.G_ch * self.D_chimney/self.mu).to(self.U.dimensionless).magnitude
-        self.fr_ch = root(self.root_friction, .01, args=(self.epsilon1,self.De,self.Re_core)).x[0]
-        term1 = (self.fr_ch*H*self.G_ch**2) / (self.D_chimney*2*self.rho_f)*self.p2m(H.magnitude)
+        self.fr_ch = root(self.root_friction, .01, args=(self.epsilon2,self.D_chimney,self.Re_core)).x[0]
+        term1 = (self.fr_ch*H*self.G_ch**2) / (self.D_chimney*2*self.rho_f)*self.p2m(H.magnitude)**2
         term2 = self.density(self.height.magnitude) * self.U.lb/self.U.foot**3 * self.g * self.height
         return (term1 + term2).to(self.U.psi)
 
@@ -536,8 +536,8 @@ class SMR(object):
 
     def H_chimney(self):
         """ Returns the minimum height of the chimney based upon the pressure balance equation """
-        obj.P_core_stat = obj.P_core()
-        obj.P_sep_stat = obj.P_sep()
+        self.P_core_stat = self.P_core()
+        self.P_sep_stat = self.P_sep()
         return root(self.P_balance, 21*12).x[0] * self.U.inch
 
 
