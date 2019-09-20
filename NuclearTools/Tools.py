@@ -501,10 +501,12 @@ class Stopping_Power(object):
 
         self.A_medium, self.Z_medium = {}, {}
         self.A_total = 0 * self.U.gram / self.U.mole
+        index = 0
         for i in self.elements:
             self.A_medium[i] = standard_mass(i) * self.U.gram / self.U.mole
-            self.A_total += standard_mass(i) * self.U.gram / self.U.mole
+            self.A_total += standard_mass(i) * self.U.gram / self.U.mole * self.inst[index]
             self.Z_medium[i] = atomic_number(i)
+            index += 1
 
         self.Z_particles, self.M_particles = {}, {}
         for i in self.particles:
@@ -553,6 +555,7 @@ class Stopping_Power(object):
         """ Returns the stopping power for each particle at given energy (E) """
         self.SP = {}
         keylist = list(self.A_medium.keys())
+        index = 0
         for particle in self.particles:
             if particle in ['ep-0']:
                 self.temp = []
@@ -560,7 +563,7 @@ class Stopping_Power(object):
                     self.temp.append(self.SP_positron(self.Z_medium[m], self.A_medium[m], self.I[m], E, self.M_particles[particle]))
                 temp2 = 0
                 for j in range(len(self.A_medium)):
-                    temp2 += self.A_medium[keylist[j]] / self.A_total * self.temp[j]
+                    temp2 += self.A_medium[keylist[j]] * self.inst[j] / self.A_total * self.temp[j]
                 self.SP[particle] = ((temp2 * self.rho).to(self.U.MeV/self.U.cm))
             elif particle in ['e-0']:
                 self.temp = []
@@ -568,16 +571,18 @@ class Stopping_Power(object):
                     self.temp.append(self.SP_electron(self.Z_medium[m], self.A_medium[m], self.I[m], E, self.M_particles[particle]))
                 temp2 = 0
                 for j in range(len(self.A_medium)):
-                    temp2 += self.A_medium[keylist[j]] / self.A_total * self.temp[j]
+                    temp2 += self.A_medium[keylist[j]] * self.inst[j] / self.A_total * self.temp[j]
                 self.SP[particle] = ((temp2 * self.rho).to(self.U.MeV/self.U.cm))
+                index += 1
             else:
                 self.temp = []
                 for m in self.elements:
                     self.temp.append(self.SP_heavy(self.Z_particles[particle], self.Z_medium[m], self.A_medium[m], self.I[m], E, self.M_particles[particle]))
                 temp2 = 0
                 for j in range(len(self.A_medium)):
-                    temp2 += self.A_medium[keylist[j]] / self.A_total * self.temp[j]
+                    temp2 += self.A_medium[keylist[j]] * self.inst[j] / self.A_total * self.temp[j]
                 self.SP[particle] = ((temp2 * self.rho).to(self.U.MeV/self.U.cm))
+                index += 1
         return self.SP
 
 
@@ -585,6 +590,7 @@ class Stopping_Power(object):
         """ Plots the stopping power vs. energy over specified range """
         self.energies, self.SP = {}, {}
         keylist = list(self.A_medium.keys())
+        index = 0
         for particle in self.particles:
             self.SP[particle] = []
             if particle in ['ep-0']:
@@ -595,8 +601,9 @@ class Stopping_Power(object):
                         self.temp.append(self.SP_positron(self.Z_medium[m], self.A_medium[m], self.I[m], i * self.U.MeV, self.M_particles[particle]))
                     temp2 = 0
                     for j in range(len(self.A_medium)):
-                        temp2 += self.A_medium[keylist[j]] / self.A_total * self.temp[j]
+                        temp2 += self.A_medium[keylist[j]] * self.inst[j] / self.A_total * self.temp[j]
                     self.SP[particle].append((temp2 * self.rho).to(self.U.MeV/self.U.cm).magnitude)
+                    index += 1
             elif particle in ['e-0']:
                 self.energies[particle] = np.logspace(-2, 4, num=100)
                 for i in self.energies[particle]:
@@ -605,8 +612,9 @@ class Stopping_Power(object):
                         self.temp.append(self.SP_electron(self.Z_medium[m], self.A_medium[m], self.I[m], i * self.U.MeV, self.M_particles[particle]))
                     temp2 = 0
                     for j in range(len(self.A_medium)):
-                        temp2 += self.A_medium[keylist[j]] / self.A_total * self.temp[j]
+                        temp2 += self.A_medium[keylist[j]] * self.inst[j] / self.A_total * self.temp[j]
                     self.SP[particle].append((temp2 * self.rho).to(self.U.MeV/self.U.cm).magnitude)
+                    index += 1
             else:
                 self.energies[particle] = np.logspace(0, 4, num=100)
                 for i in self.energies[particle]:
@@ -615,8 +623,9 @@ class Stopping_Power(object):
                         self.temp.append(self.SP_heavy(self.Z_particles[particle], self.Z_medium[m], self.A_medium[m], self.I[m], i * self.U.MeV, self.M_particles[particle]))
                     temp2 = 0
                     for j in range(len(self.A_medium)):
-                        temp2 += self.A_medium[keylist[j]] / self.A_total * self.temp[j]
+                        temp2 += self.A_medium[keylist[j]] * self.inst[j] / self.A_total * self.temp[j]
                     self.SP[particle].append((temp2 * self.rho).to(self.U.MeV/self.U.cm).magnitude)
+                    index += 1
         labels = {}
         for i in self.particles:
             if i in ['e-0']:
