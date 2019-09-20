@@ -15,6 +15,7 @@ U = pint.UnitRegistry()
 NA = 6.0221409 * 10**23
 nuclide_data = get_python_lib() + '/NuclearTools/Nuclide_Data.txt'
 Pm = 1.0072764669
+Hm = 1.00782503207
 Nm = 1.00866491588
 em = .0005485799
 MT_dict = {'(z,total)'   :1,
@@ -149,7 +150,7 @@ def standard_mass(element):
 
 
 def atomic_number(element):
-    """ Provides atomic mass of atom.  Input as Cs """
+    """ Provides atomic number of atom.  Input as Cs """
     with open(nuclide_data) as search:
         lines = search.readlines()
         for i in range(len(lines)):
@@ -236,7 +237,7 @@ def BE_per_nucleon(atom):
     A = int(atom[index+1:])
     num_Z = atomic_number(element)
     num_N = A - num_Z
-    exp_mass = Pm * num_Z + Nm * num_N
+    exp_mass = Hm * num_Z + Nm * num_N
     mass_defect = exp_mass - real_mass
     return (931.5 * (mass_defect)) / A * U.MeV
 
@@ -256,6 +257,11 @@ def Q_value(reactants, products):
                 temp1 += int(reactant[0:-1]) * Pm
             except:
                 temp1 += Pm
+        elif reactant[-1:] == 'e':
+            try:
+                temp1 += int(reactant[0:-1]) * em
+            except:
+                temp1 += em
         else:
             temp1 += atomic_mass(reactant)
 
@@ -270,6 +276,11 @@ def Q_value(reactants, products):
                 temp2 += int(product[0:-1]) * Pm
             except:
                 temp2 += Pm
+        elif product[-1:] == 'e':
+            try:
+                temp2 += int(product[0:-1]) * em
+            except:
+                temp2 += em
         else:
             temp2 += atomic_mass(product)
 
@@ -466,3 +477,163 @@ class cross_section(object):
     def condense_to(self, groups):
         groups = int(groups)
         group_len = len(self.cross_sections) // groups
+
+
+
+
+
+class Stopping_Power(object):
+    """ Calculates the stopping power of provided particles in a given medium and plots over a specified range """
+    def __init__(self, medium, particles, rho, U, I):
+        # knowns
+        self.U = U
+        self.r = 2.818 * 10**(-15) * self.U.m
+        self.c = 299792458 * self.U.m/self.U.s
+        self.me = 9.10938356*10**(-31) * self.U.kg
+        self.mec2 = 0.510998950 * self.U.MeV
+        self.NA = 6.0221409 * 10**23 * self.U.mole**(-1)
+
+        # inputs
+        self.medium = medium
+        self.particles = particles
+        self.rho = rho
+        self.elements, self.inst = indv_elements(self.medium)
+
+        self.A_medium, self.Z_medium = {}, {}
+        self.A_total = 0 * self.U.gram / self.U.mole
+        for i in self.elements:
+            self.A_medium[i] = standard_mass(i) * self.U.gram / self.U.mole
+            self.A_total += standard_mass(i) * self.U.gram / self.U.mole
+            self.Z_medium[i] = atomic_number(i)
+
+        self.Z_particles, self.M_particles = {}, {}
+        for i in self.particles:
+            self.M_particles[i] = atomic_mass(i) * self.U.amu
+            try:
+                self.Z_particles[i] = atomic_number(indv_elements(i)[0][0])
+            except:
+                pass
+
+        self.I = {}
+        i = 0
+        for m in self.elements:
+            self.I[m] = I[i]
+            i += 1
+
+    def L(self, m, T):
+        """ lorentz Factor """
+        return T / (m * self.c**2) + 1
+
+    def v(self, m, T):
+        """ Finding velocity from mass and energy of particle """
+        return self.c * np.sqrt(1 - (1 / (T / (m * self.c**2) + 1 ) )**2 )
+
+    def SP_heavy(self, z, Z, A, I, T, m):
+        """ Stopping power for proton, deuterons, tritons and alpha """
+        return (4 * np.pi * self.r**2 * z**2 * (self.mec2 / (self.v(m, T) / self.c)**2) * self.NA / A * Z *
+               (np.log(2 * (self.mec2 / I) * (self.v(m, T) / self.c)**2 * self.L(m, T)**2) -
+               (self.v(m, T) / self.c)**2))
+
+    def SP_electron(self, Z, A, I, T, m):
+        """ Stopping power for electrons """
+        return (4 * np.pi * self.r**2 * (self.mec2 / (self.v(m, T) / self.c)**2) * self.NA / A * Z *
+                (np.log( self.mec2 / I * self.v(m, T) / self.c * self.L(m, T) * np.sqrt(self.L(m, T) - 1)) +
+                1 / (2 * self.L(m, T)**2) * ( (self.L(m, T) - 1)**2 / 8 + 1 -
+                (self.L(m, T)**2 + 2 * self.L(m, T) - 1) * np.log(2) ) ) )
+
+    def SP_positron(self, Z, A, I, T, m):
+        """ Stopping power for positron """
+        return (4 * np.pi * self.r**2 * (self.mec2 / (self.v(m, T) / self.c)**2) * self.NA / A * Z *
+                (np.log( self.mec2 / I * self.v(m, T) / self.c * self.L(m, T) * np.sqrt(self.L(m, T) - 1)) -
+                (self.v(m, T) / self.c)**2 / 24 * (23 + 14 / (self.L(m, T) + 1) + 10 / (self.L(m, T) + 1)**2 +
+                4 / (self.L(m, T) + 1)**3) + np.log(2) / 2 ) )
+
+
+    def SPatE(self, E):
+        """ Returns the stopping power for each particle at given energy (E) """
+        self.SP = {}
+        keylist = list(self.A_medium.keys())
+        for particle in self.particles:
+            if particle in ['ep-0']:
+                self.temp = []
+                for m in self.elements:
+                    self.temp.append(self.SP_positron(self.Z_medium[m], self.A_medium[m], self.I[m], E, self.M_particles[particle]))
+                temp2 = 0
+                for j in range(len(self.A_medium)):
+                    temp2 += self.A_medium[keylist[j]] / self.A_total * self.temp[j]
+                self.SP[particle] = ((temp2 * self.rho).to(self.U.MeV/self.U.cm))
+            elif particle in ['e-0']:
+                self.temp = []
+                for m in self.elements:
+                    self.temp.append(self.SP_electron(self.Z_medium[m], self.A_medium[m], self.I[m], E, self.M_particles[particle]))
+                temp2 = 0
+                for j in range(len(self.A_medium)):
+                    temp2 += self.A_medium[keylist[j]] / self.A_total * self.temp[j]
+                self.SP[particle] = ((temp2 * self.rho).to(self.U.MeV/self.U.cm))
+            else:
+                self.temp = []
+                for m in self.elements:
+                    self.temp.append(self.SP_heavy(self.Z_particles[particle], self.Z_medium[m], self.A_medium[m], self.I[m], E, self.M_particles[particle]))
+                temp2 = 0
+                for j in range(len(self.A_medium)):
+                    temp2 += self.A_medium[keylist[j]] / self.A_total * self.temp[j]
+                self.SP[particle] = ((temp2 * self.rho).to(self.U.MeV/self.U.cm))
+        return self.SP
+
+
+    def plot(self, xrange, yrange):
+        """ Plots the stopping power vs. energy over specified range """
+        self.energies, self.SP = {}, {}
+        keylist = list(self.A_medium.keys())
+        for particle in self.particles:
+            self.SP[particle] = []
+            if particle in ['ep-0']:
+                self.energies[particle] = np.logspace(-2, 4, num=100)
+                for i in self.energies[particle]:
+                    self.temp = []
+                    for m in self.elements:
+                        self.temp.append(self.SP_positron(self.Z_medium[m], self.A_medium[m], self.I[m], i * self.U.MeV, self.M_particles[particle]))
+                    temp2 = 0
+                    for j in range(len(self.A_medium)):
+                        temp2 += self.A_medium[keylist[j]] / self.A_total * self.temp[j]
+                    self.SP[particle].append((temp2 * self.rho).to(self.U.MeV/self.U.cm).magnitude)
+            elif particle in ['e-0']:
+                self.energies[particle] = np.logspace(-2, 4, num=100)
+                for i in self.energies[particle]:
+                    self.temp = []
+                    for m in self.elements:
+                        self.temp.append(self.SP_electron(self.Z_medium[m], self.A_medium[m], self.I[m], i * self.U.MeV, self.M_particles[particle]))
+                    temp2 = 0
+                    for j in range(len(self.A_medium)):
+                        temp2 += self.A_medium[keylist[j]] / self.A_total * self.temp[j]
+                    self.SP[particle].append((temp2 * self.rho).to(self.U.MeV/self.U.cm).magnitude)
+            else:
+                self.energies[particle] = np.logspace(0, 4, num=100)
+                for i in self.energies[particle]:
+                    self.temp = []
+                    for m in self.elements:
+                        self.temp.append(self.SP_heavy(self.Z_particles[particle], self.Z_medium[m], self.A_medium[m], self.I[m], i * self.U.MeV, self.M_particles[particle]))
+                    temp2 = 0
+                    for j in range(len(self.A_medium)):
+                        temp2 += self.A_medium[keylist[j]] / self.A_total * self.temp[j]
+                    self.SP[particle].append((temp2 * self.rho).to(self.U.MeV/self.U.cm).magnitude)
+        labels = {}
+        for i in self.particles:
+            if i in ['e-0']:
+                labels[i] = '$e^-$'
+            elif i in ['ep-0']:
+                labels[i] = '$e^+$'
+            else:
+                labels[i] = '$^' + str(int(atomic_mass(i))) + '_' + str(self.Z_particles[i]) + ' ' + indv_elements(i)[0][0] + '$'
+        plt.figure(figsize=(12,7))
+        for i in self.particles:
+            plt.plot(self.energies[i], self.SP[i], label=labels[i])
+        plt.xscale('log')
+        plt.xlim(xrange)
+        plt.ylim(yrange)
+        plt.grid(color='gray', alpha=0.6)
+        plt.xlabel('kinetic energy (MeV)')
+        plt.ylabel('stopping power (MeV/cm)')
+        plt.legend()
+        plt.tight_layout()
+        plt.show()
