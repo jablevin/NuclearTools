@@ -522,6 +522,13 @@ class Stopping_Power(object):
             self.I[m] = I[i]
             i += 1
 
+        self.energies = {}
+        for i in self.particles:
+            if i in ['ep-0', 'e-0']:
+                self.energies[i] = np.logspace(-2, 4, num=100)
+            else:
+                self.energies[i] = np.logspace(0, 4, num=100)
+
     def L(self, m, T):
         """ lorentz Factor """
         return T / (m * self.c**2) + 1
@@ -588,13 +595,12 @@ class Stopping_Power(object):
 
     def plot(self, xrange, yrange):
         """ Plots the stopping power vs. energy over specified range """
-        self.energies, self.SP = {}, {}
+        self.SP = {}
         keylist = list(self.A_medium.keys())
         index = 0
         for particle in self.particles:
             self.SP[particle] = []
             if particle in ['ep-0']:
-                self.energies[particle] = np.logspace(-2, 4, num=100)
                 for i in self.energies[particle]:
                     self.temp = []
                     for m in self.elements:
@@ -605,7 +611,6 @@ class Stopping_Power(object):
                     self.SP[particle].append((temp2 * self.rho).to(self.U.MeV/self.U.cm).magnitude)
                     index += 1
             elif particle in ['e-0']:
-                self.energies[particle] = np.logspace(-2, 4, num=100)
                 for i in self.energies[particle]:
                     self.temp = []
                     for m in self.elements:
@@ -616,7 +621,6 @@ class Stopping_Power(object):
                     self.SP[particle].append((temp2 * self.rho).to(self.U.MeV/self.U.cm).magnitude)
                     index += 1
             else:
-                self.energies[particle] = np.logspace(0, 4, num=100)
                 for i in self.energies[particle]:
                     self.temp = []
                     for m in self.elements:
