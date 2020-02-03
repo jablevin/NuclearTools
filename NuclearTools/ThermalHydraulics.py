@@ -260,6 +260,7 @@ class reactor_thermals(object):
         elif self.method.startswith('chen'):
             return self.T_clad_chen(z)
 
+
     def T_sfuel(self, z):
         """ Returns the fuel surface temperature """
         try:
@@ -685,7 +686,7 @@ class reactor_thermals(object):
         else:
             unit_string = str(units)[-1]
         if method==None:
-            method == ['thom']
+            method = ['thom']
         for meth in method:
             T_coolant[meth], T_clad[meth], T_fuel[meth] = [], [], []
             self.method = meth
