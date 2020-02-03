@@ -5,6 +5,7 @@ import os
 import sys
 from shutil import rmtree
 from setuptools import find_packages, setup, Command
+from distutils.core import Extension
 
 cwd = os.getcwd()
 cwd = cwd.replace('\\', '/')
@@ -72,6 +73,9 @@ class UploadCommand(Command):
         sys.exit()
 
 
+module1 = Extension('MD',
+                    sources = ['MD.c'])
+
 setup(
     name=NAME,
     version=about['__version__'],
@@ -82,6 +86,7 @@ setup(
     python_requires=REQUIRES_PYTHON,
     url=URL,
     packages=find_packages(exclude=('tests',)),
+    ext_modules = [module1],
 
     install_requires=REQUIRED,
     package_data={'NuclearTools': ['Nuclide_Data.txt']},
