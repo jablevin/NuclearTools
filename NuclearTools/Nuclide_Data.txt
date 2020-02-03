@@ -1,3 +1,25 @@
+Atomic Number = 0
+Atomic Symbol = ep
+Mass Number = 0
+Relative Atomic Mass = 0.00054858(10)
+Isotopic Composition = 1(70)
+Standard Atomic Weight = 0.00054858(10)
+
+Atomic Number = 0
+Atomic Symbol = e
+Mass Number = 0
+Relative Atomic Mass = 0.00054858(10)
+Isotopic Composition = 1(70)
+Standard Atomic Weight = 0.00054858(10)
+
+Atomic Number = 1
+Atomic Symbol = p
+Mass Number = 1
+Relative Atomic Mass = 1.00727647(10)
+Isotopic Composition = 1(70)
+Standard Atomic Weight = 1.00727647(10)
+Notes = g,m,r,b,w
+
 Atomic Number = 1
 Atomic Symbol = H
 Mass Number = 1
@@ -7,15 +29,15 @@ Standard Atomic Weight = 1.00794(7)
 Notes = g,m,r,b,w
 
 Atomic Number = 1
-Atomic Symbol = D
+Atomic Symbol = H
 Mass Number = 2
-Relative Atomic Mass = 2.0141017778(4)
+Relative Atomic Mass = 2.013553212(4)
 Isotopic Composition = 0.000115(70)
 Standard Atomic Weight = 1.00794(7)
 Notes = g,m,r,b,w
 
 Atomic Number = 1
-Atomic Symbol = T
+Atomic Symbol = H
 Mass Number = 3
 Relative Atomic Mass = 3.0160492777(25)
 Isotopic Composition = 
