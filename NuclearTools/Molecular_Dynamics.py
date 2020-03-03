@@ -5,7 +5,6 @@ from abc import ABC, abstractmethod
 
 
 
-
 class BaseFunctions(ABC):
     @abstractmethod
     def plot_prob_vs_vel(self, increments=[0, 1, 2, 5, 10], output_list=None):
@@ -103,6 +102,47 @@ class Reader(ABC):
                 if lines[i].startswith('hfun'):
                     temp2[0][k], temp2[1][k] = lines[i][8:14], lines[i][17:23]
                     keeper.append(i)
+
+
+
+class MD(object):
+    def __init__(self=None, deltaT=None, density=None, initUcellx=None, initUcelly=None, stepAvg=None,
+                stepEquil=None, stepLimit=None, temperature=None, limitVel=None, rangeVel=None,
+                sizeHistVel=100, stepVel=None, randSeedP=None, printout=False, finished=False):
+        if finished:
+            pass
+        else:
+            so_file = "build/lib.win-amd64-3.7/MD.cp37-win_amd64.pyd"
+            lib = CDLL(so_file)
+            lib.PyInit_MD.argtypes = [c_double, c_double, c_int, c_int, c_int, c_int,
+                c_int, c_double, c_int, c_double, c_int, c_int]
+            if printout:
+                printout = 1
+            else:
+                printout = 0
+
+            lib.PyInit_MD(deltaT,
+                          density,
+                          initUcellx,
+                          initUcelly,
+                          stepAvg,
+                          stepEquil,
+                          stepLimit,
+                          temperature,
+                          limitVel,
+                          rangeVel,
+                          sizeHistVel,
+                          stepVel,
+                          randSeedP,
+                          printout)
+
+        with open('output.txt', 'r') as search:
+            lines = search.readlines()
+            temp, temp2, temp3 = -np.ones((len(lines), 2)), -np.ones((2, len(lines))), -np.ones((len(lines), 10))
+            j, k, m = 0, 0, 0
+            for i in range(2, len(lines)):
+                if lines[i].startswith('hfun'):
+                    temp2[0][k], temp2[1][k] = lines[i][8:14], lines[i][17:23]
                     k += 1
                 elif lines[i].startswith('Summary'):
                     temp3[m] = (lines[i][8:]).split()
@@ -131,6 +171,7 @@ class Reader(ABC):
             vvsum = temp3[:t3, 10]
             self.temperature = 2 / 3 * np.array(self.kinenergy)
             sizeHistVel = np.min(keeper)
+            self.temperature = 2/(3*1.38064E-23) * self.kinenergy
             self.hist = np.ones((t, 2, sizeHistVel))
             counter = t // sizeHistVel
             j = 0
@@ -311,3 +352,35 @@ def RunCases3D(infiles=['input.txt']):
         if not infile.endswith(tuple(['.txt'])):
             infile += '.txt'
         MD3D.MD3D(infile)
+
+    def plot_prob_vs_vel(self, increments=[0, 1, 2, 5, 10]):
+        plt.figure(figsize=(12,8))
+        for i in increments:
+            plt.plot(self.hist[i][0], self.hist[i][1], label=i)
+        plt.xlabel('Velocity')
+        plt.ylabel('Probability')
+        plt.legend()
+        plt.show()
+
+
+    def plot_hfun_vs_time(self, low_r=0, up_r=10):
+        plt.figure(figsize=(12,8))
+        plt.plot(self.hfun[0][low_r:up_r], self.hfun[1][low_r:up_r])
+        plt.ylabel('h-function')
+        plt.xlabel('Time')
+        plt.show()
+
+
+
+    def fplot(self, property):
+        values = {'Kinetic Energy': self.kinenergy,
+                  'Potential Energy': self.potenergy,
+                  'Total Energy': self.totenergy,
+                  'Momentum': self.momentum,
+                  'Temperature': self.temperature,
+                  "Pressure": self.pressure}
+        plt.figure(figsize=(12,8))
+        plt.plot(self.time, values[property])
+        plt.ylabel(property)
+        plt.xlabel('Time')
+        plt.show()

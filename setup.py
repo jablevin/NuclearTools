@@ -73,11 +73,16 @@ class UploadCommand(Command):
         sys.exit()
 
 
+<<<<<<< HEAD
 module1 = Extension('NuclearTools.MD2D',
                     sources = ['NuclearTools/MD2D.c'])
 
 module2 = Extension('NuclearTools.MD3D',
                     sources = ['NuclearTools/MD3D.c'])
+=======
+module1 = Extension('MD',
+                    sources = ['MD.c'])
+>>>>>>> c00b2713afa9362296e2c87a8e260c48fc6e5ec5
 
 setup(
     name=NAME,
@@ -89,7 +94,11 @@ setup(
     python_requires=REQUIRES_PYTHON,
     url=URL,
     packages=find_packages(exclude=('tests',)),
+<<<<<<< HEAD
     ext_modules = [module1, module2],
+=======
+    ext_modules = [module1],
+>>>>>>> c00b2713afa9362296e2c87a8e260c48fc6e5ec5
 
     install_requires=REQUIRED,
     package_data={'NuclearTools': ['Nuclide_Data.txt']},
