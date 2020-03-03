@@ -8,6 +8,7 @@ from urllib.request import urlopen
 import matplotlib.pyplot as plt
 from distutils.sysconfig import get_python_lib
 import urllib
+from scipy.interpolate import interp1d
 
 U = pint.UnitRegistry()
 
@@ -62,6 +63,7 @@ MT_dict = {'(z,total)'   :1,
         'nonelastic'     :3,
         'anything'       :5,
         'fission'        :18,}
+
 
 def indv_elements(compound):
     """ Returns a list of individual elements and a list of their multiplicities"""
@@ -196,6 +198,7 @@ def num_density(material, is_compound = False, density = None, weight_per = None
 
     return (rho * NA / A) / U.cm**3
 
+
 # class material_fractions(object):
 #     """ Converts weight fraction to atom fraction"""
 #     def __init__(self, material, is_compound=False, density=None, weight_percent=None, atom_percent=None, isotopes=None):
@@ -296,9 +299,6 @@ def coh_scatter_energy(atom, angle, E):
     E_prime = (1 / (A + 1)**2) * ( np.sqrt(E) * np.cos(np.radians(angle)) +
             np.sqrt(E * (A**2 - 1 + (np.cos(np.radians(angle)))**2)))**2
     return E_prime
-
-
-
 
 
 
@@ -431,11 +431,12 @@ class cross_section(object):
                 content.discard(c)
         return content
 
+
     def plot(self):
         plt.figure(figsize=(10,6))
-        plt.loglog(self.indep_var[1:], self.cross_sections[1:], color = 'darkorange')
+        plt.loglog(self.indep_var[1:]/10**6, self.cross_sections[1:], color = 'darkorange')
         if self.MF == 3:
-            plt.xlabel('Energies [eV]')
+            plt.xlabel('Energies [MeV]')
         plt.ylabel('Cross Section [barns]')
         plt.tight_layout()
         plt.show()
@@ -474,11 +475,18 @@ class cross_section(object):
 
 
     # TODO Add ability to condense down to several energy groups Ex: fast and thermal groups.
-    def condense_to(self, groups):
-        groups = int(groups)
-        group_len = len(self.cross_sections) // groups
+    # def condense_to(self, groups):
+    #     groups = int(groups)
+    #     group_len = len(self.cross_sections) // groups
 
 
+    def cross_section_mev(self, energy, method='linear'):
+        energy = energy * 10**6
+        absolute_difference_function = lambda list_value : abs(list_value - energy)
+        closest_value = min(self.indep_var, key=absolute_difference_function)
+        index = self.indep_var.tolist().index(closest_value)
+        inter = interp1d(self.indep_var[index-1:index+1], self.cross_sections[index-1:index+1], kind=method)
+        return inter(energy)
 
 
 
